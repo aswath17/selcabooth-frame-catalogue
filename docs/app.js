@@ -11,6 +11,41 @@
  const palette=[['White','#ffffff'],['Lavender','#dac9ef'],['Blush','#f5cbdc'],['Butter','#fff0b5'],['Sage','#cbdac5'],['Blue','#c9e4f2'],['Plum','#70142f'],['Black','#111111']];
  const svgEl=(tag,attrs={})=>{const n=document.createElementNS(ns,tag);for(const [k,v] of Object.entries(attrs))if(v!==undefined&&v!==null)n.setAttribute(k,String(v));return n;};
  const custom=l=>l.background.mode==='transparent';
+ // Recommendations describe opening shapes, not measured booth capacities.
+ const reviewedModerate=new Set(['6 Poses004','land6shot','3pose strip001','2 Strip - Frame1']);
+ function displayedSize(a){
+  const angle=((a.rotation||0)%180+180)%180;
+  return Math.abs(angle-90)<=5?[a.height,a.width]:[a.width,a.height];
+ }
+ function capacity(l,a){
+  const [w,h]=displayedSize(a),ratio=w/h;
+  if(ratio<0.845)return 2;
+  // The reviewed exceptions have moderately wide openings (up to 1.5:1).
+  if(ratio<=1.25||(reviewedModerate.has(l.name)&&ratio<=1.5))return 6;
+  return 8;
+ }
+ const capacityText=n=>n===2?'1–2 people':n===6?'4–6 people':'Max 8 people';
+ function recommendation(l){
+  const counts=l.photoSlots.filter(a=>!a.hidden).map(a=>capacity(l,a));
+  const n=Math.min(...counts),mixed=new Set(counts).size>1;
+  const box=document.createElement('div');box.className='recommendation';
+  if(counts.length){const p=document.createElement('p');p.className='overall';p.textContent=`Recommended overall: ${n===8?'Up to 8 people':capacityText(n)}`;box.append(p);}
+  if(mixed){const p=document.createElement('p');p.textContent='Based on the smallest photo opening.';box.append(p);}
+  return box;
+ }
+ function holderLabel(l,a){
+  const cx=a.x+a.width/2,cy=a.y+a.height/2;
+  const angle=(a.rotation||0)*Math.PI/180,c=Math.abs(Math.cos(angle)),s=Math.abs(Math.sin(angle));
+  // An upright rectangle contained inside the rotated holder, inset from artwork.
+  const [dw,dh]=displayedSize(a);
+  const fit=Math.min(a.width/(c*dw+s*dh),a.height/(s*dw+c*dh));
+  const safeW=dw*fit*.72,safeH=dh*fit*.72;
+  const n=capacity(l,a),lines=[n===2?'1–2':n===6?'4–6':'Max 8','people'];
+  const size=Math.min(safeW/(6*.62),safeH/2.8,Math.min(l.canvas.width,l.canvas.height)*.065);
+  const text=svgEl('text',{x:cx,y:cy,fill:'#ffffff','font-family':'Arial, Helvetica, sans-serif','font-weight':600,'font-size':size,'text-anchor':'middle','dominant-baseline':'central','pointer-events':'none',class:'holder-label','aria-label':capacityText(n)});
+  lines.forEach((line,i)=>{const span=svgEl('tspan',{x:cx,y:cy+(i-.5)*size*1.15});span.textContent=line;text.append(span);});
+  return text;
+ }
  function preview(l,colour='#fff') {
   const w=l.canvas.width,h=l.canvas.height;
   const svg=svgEl('svg',{viewBox:`0 0 ${w} ${h}`,role:'img','aria-label':`${l.name} frame preview`,preserveAspectRatio:'xMidYMid meet'});
@@ -26,6 +61,7 @@
    if(type==='photo')root.append(svgEl('rect',{...p,fill:'#111111',rx:Math.min(a.cornerRadius||0,a.width/2,a.height/2),stroke:a.borderColor||'#ffffff','stroke-width':a.borderThickness||0}));
    else root.append(svgEl('image',{...p,href:type==='decoration'?a.source:refs.get(a.assetId),opacity:a.opacity??1,preserveAspectRatio:'none'}));
   }
+  for(const a of l.photoSlots)if(!a.hidden)root.append(holderLabel(l,a));
   return svg;
  }
  function wheel(){const w=document.createElement('span');w.className='wheel';w.setAttribute('aria-hidden','true');return w;}
@@ -44,7 +80,7 @@
   const meta=document.createElement('div');meta.className='card-meta';const heading=document.createElement('h3');heading.textContent=l.name;meta.append(heading);
   if(custom(l)){const c=document.createElement('button');c.className='custom-indicator';c.append(wheel(),document.createTextNode('Choose your colour'));c.addEventListener('click',()=>openDetail(l,c));meta.append(c);}
   else{const label=document.createElement('p');label.textContent=groupNames.get(l.styleGroupId).replace('POSE','pose');meta.append(label);}
-  article.append(b,heart,meta);if(observer)observer.observe(b);else{b.replaceChildren(preview(l,colours.get(l.id)||'#fff'));b.setAttribute('aria-busy','false');}return article;
+  article.append(b,heart,meta,recommendation(l));if(observer)observer.observe(b);else{b.replaceChildren(preview(l,colours.get(l.id)||'#fff'));b.setAttribute('aria-busy','false');}return article;
  }
  function render(){
   if(observer)observer.disconnect();
@@ -60,6 +96,7 @@
   const poses=new Set(l.photoSlots.filter(p=>!p.hidden).map(p=>p.captureIndex)).size;
   $('detail-meta').textContent=`${poses} ${poses===1?'pose':'poses'} · ${l.canvas.orientation} layout`;
   $('detail-stage').replaceChildren(preview(l,colours.get(l.id)||'#ffffff'));
+  $('detail-recommendation').replaceChildren(recommendation(l));
   $('colour-panel').hidden=!custom(l);$('fixed-note').hidden=custom(l);syncSaved();
   if(custom(l))setColour(colours.get(l.id)||'#ffffff');
   if(!$('detail').open)$('detail').showModal();document.body.classList.add('modal-open');$('close').focus();

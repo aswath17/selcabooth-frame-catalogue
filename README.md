@@ -5,7 +5,7 @@ A mobile-first, single-page catalogue of the 71 supplied SelcaBooth layouts. The
 ## Included
 
 - All 71 layouts with their original names, positions, borders, image layers and rotations.
-- Solid black photo spaces with no placeholder words or numbers.
+- Black photo spaces with centred, upright group-size suggestions for each opening.
 - 28 customisable backgrounds marked with large colour wheels; 43 fixed backgrounds.
 - Category filtering, name search, saved frames on the customer's device and full-size previews.
 - Colour swatches and a colour picker only for customisable layouts.
@@ -50,3 +50,9 @@ Review the result and commit `docs/catalogue.js` plus new assets. Existing asset
 - `tools/` — importer and integrity validation
 
 Browser preferences use only local storage (`selcabooth.saved.v1`). Photos are not collected or uploaded. Colour choices last for the current page visit. Layout/asset rights remain with their respective owners; no third-party artwork licence is granted by this repository.
+
+## Suggested group sizes
+
+Each visible holder is classified separately by width / height: below 0.845 suggests 1–2 people, 0.845–1.25 suggests 4–6 people, and above 1.25 suggests Max 8 people. Width and height are swapped within 5° of a quarter-turn. The reviewed layouts `6 Poses004`, `land6shot`, `3pose strip001` and `2 Strip - Frame1` retain 4–6 for moderately wide openings up to 1.5:1; portrait openings always retain 1–2.
+
+The overall recommendation uses the lowest suggested capacity among visible holders, including repeated strip photos. Hidden holders are excluded. Mixed capacities include a smallest-opening note. Labels use the shared gallery/detail renderer, with upright two-line text inset inside each rotated holder. Suggestions are based on shape, not measured booth capacities; fit depends on pose and positioning.

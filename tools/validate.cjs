@@ -12,3 +12,21 @@ for(const l of layouts){assert(groupIds.has(l.styleGroupId),`Missing category: $
 }
 for(const file of ['app.js','catalogue.js'])new vm.Script(fs.readFileSync(path.join(root,file),'utf8'));
 console.log(`PASS: ${layouts.length} layouts, ${groups.length} categories, ${custom} customisable backgrounds; all assets resolve.`);
+
+// Test holder classification boundaries independently of canvas orientation/pose count.
+const app=fs.readFileSync(path.join(root,'app.js'),'utf8');
+const helpers=app.slice(app.indexOf(' const reviewedModerate='),app.indexOf(' const capacityText='));
+const sizes={};vm.runInNewContext(helpers+';this.classify=capacity;',sizes);
+const classify=(w,h,rotation=0,name='Boundary fixture')=>sizes.classify({name},{width:w,height:h,rotation});
+for(const [ratio,expected] of [[.8449,2],[.845,6],[1,6],[1.25,6],[1.2501,8],[2,8]])assert.equal(classify(ratio*1000,1000),expected);
+for(const rotation of [90,-90,270,450,89.9,270.1])assert.equal(classify(1500,600,rotation),2);
+assert.equal(classify(600,1500,90),8);assert.equal(classify(1500,600,180),8);
+for(const name of ['6 Poses004','land6shot','3pose strip001','2 Strip - Frame1']){
+ assert.equal(classify(1350,1000,0,name),6);assert.equal(classify(600,1000,0,name),2);assert.equal(classify(2000,1000,0,name),8);
+}
+for(const l of layouts){
+ const visible=l.photoSlots.filter(a=>!a.hidden);
+ assert(visible.length,`${l.name}: no visible holders`);
+ for(const a of visible)assert([2,6,8].includes(sizes.classify(l,a)));
+}
+console.log('PASS: capacity boundaries, quarter-turns, portrait priority, reviewed exceptions and all visible holders.');
